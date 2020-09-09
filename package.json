@@ -1,0 +1,21 @@
+{
+  "name": "jobsearch-api",
+  "version": "1.0.0",
+  "description": "Api for jobsearch",
+  "main": "server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Bart Klomp",
+  "license": "ISC",
+  "dependencies": {
+    "chalk": "^4.1.0",
+    "cors": "^2.8.5",
+    "express": "^4.17.1",
+    "morgan": "^1.10.0"
+    },
+  "devDependencies": {
+    "nodemon": "^2.0.4"
+  }
+}
