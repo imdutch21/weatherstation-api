@@ -13,8 +13,8 @@ const crypto = require('crypto');
 
 function encodeToken(username, password) {
     const playload = {
-        username: username,
-        password: password
+        StudentCode: username,
+        Password: password
     };
     return jwt.encode(playload, secretKey)
 }

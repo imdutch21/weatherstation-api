@@ -47,7 +47,6 @@ function shutdown() {
 process.on('SIGTERM', shutdown);
 process.on('SIGINT', shutdown);
 
-
 http.listen(port, () => console.log(chalk.green('[SERVER] Server running on port ' + port)));
 
 module.exports = app;
