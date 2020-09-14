@@ -11,7 +11,7 @@ module.exports = {
             assert(req.header, "header is not defined");
             assert(req.header("access-key"), "access-key has to be provided");
         } catch (error) {
-            next(new ApiError(error.message, 412));
+            next(new ApiError(error.toString(), 412));
             return;
         }
         let token = req.header("access-key") || '';
@@ -21,8 +21,8 @@ module.exports = {
                 next(error);
             } else {
 
-                let sql = "SELECT ID FROM Student WHERE StudentCode = ?"
-                db.query(sql, [payload.StudentCode], (error, results, fields) => {
+                let sql = "SELECT ID FROM Student WHERE ID = ?"
+                db.query(sql, [payload.StudentID], (error, results, fields) => {
                     if (results.length === 0) {
                         next(new ApiError("This user does not exist anymore", 401));
                     } else {
@@ -57,7 +57,8 @@ module.exports = {
                     next(new ApiError(error, 500))
             } else {
                 res.status(200).json({
-                    "Key": auth.encodeToken(body.StudentCode, body.Password)
+                    "Key": auth.encodeToken(results[0].ID, body.Password),
+                    "StudentID": results[0].ID
                 }).end();
             }
         });
@@ -79,8 +80,10 @@ module.exports = {
             if (results.length === 0) {
                 next(new ApiError("Wrong studentcode or password", 401));
             } else {
+                console.log(results[0].ID);
                 res.status(200).json({
-                    "Key": auth.encodeToken(body.StudentCode, body.Password)
+                    "Key": auth.encodeToken(results[0].ID, body.Password),
+                    "StudentID": results[0].ID
                 }).end();
             }
         });
