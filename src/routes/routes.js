@@ -9,9 +9,9 @@ const weatherstation_routes = require('./weatherstation_routes');
 const event_routes = require('./event_routes');
 const authentication_routes = require('./authentication.routes');
 
-router.use('/',weatherdata_routes);
-router.use('/',weatherstation_routes);
-router.use('/',event_routes);
+router.use('/weatherData',weatherdata_routes);
+router.use('/weatherStation',weatherstation_routes);
+router.use('/event',event_routes);
 
 router.use('/',authentication_routes);
 // //Catch 404's 
