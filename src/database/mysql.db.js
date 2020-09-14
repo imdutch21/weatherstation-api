@@ -1,5 +1,6 @@
 let mysql = require('mysql');
 let config = require('../config/config');
+const ApiError = require('../models/ApiError')
 
 let con = mysql.createConnection({
   host: config.databaseHost,
