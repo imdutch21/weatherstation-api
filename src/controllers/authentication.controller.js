@@ -15,21 +15,14 @@ module.exports = {
             return;
         }
         let token = req.header("access-key") || '';
-        auth.decodeToken(token, (err, payload) => {
-            if (err) {
-                const error = new ApiError(err.message || err, 401);
-                next(error);
-            } else {
 
-                let sql = "SELECT ID FROM Student WHERE ID = ?"
-                db.query(sql, [payload.StudentID], (error, results, fields) => {
-                    if (results.length === 0) {
-                        next(new ApiError("This user does not exist anymore", 401));
-                    } else {
-                        req.id = results[0].ID;
-                        next();
-                    }
-                });
+        let sql = "SELECT ID FROM Student WHERE AccessKey = ?"
+        db.query(sql, [token], (error, results, fields) => {
+            if (results.length === 0) {
+                next(new ApiError("This user does not exist anymore", 401));
+            } else {
+                req.id = results[0].ID;
+                next();
             }
         });
     },
@@ -48,17 +41,19 @@ module.exports = {
             next(new ApiError(ex.toString(), 412));
             return;
         }
-        let sql = "INSERT INTO Student (`StudentCode`, `Password`) VALUES (?, ?)"
-        db.query(sql, [body.StudentCode, body.Password], (error, results, fields) => {
+        let accessKey = auth.hash(body.Password + body.StudentCode);
+        let sql = "INSERT INTO Student (`StudentCode`, `Password`, `AccessKey`) VALUES (?, ?, ?)"
+        db.query(sql, [body.StudentCode, body.Password, accessKey], (error, results, fields) => {
             if (error) {
                 if (error.code === "ER_DUP_ENTRY")
                     next(new ApiError("studentcode is already registered", 412));
                 else
                     next(new ApiError(error, 500))
             } else {
+                console.log(results);
                 res.status(200).json({
-                    "Key": auth.encodeToken(results[0].ID, body.Password),
-                    "StudentID": results[0].ID
+                    "Key": accessKey,
+                    "StudentID": results.insertId
                 }).end();
             }
         });
@@ -75,14 +70,14 @@ module.exports = {
             return;
         }
 
-        let sql = "SELECT ID FROM Student WHERE StudentCode = ? AND Password = ?"
+        let sql = "SELECT ID, AccessKey FROM Student WHERE StudentCode = ? AND Password = ?"
         db.query(sql, [body.StudentCode, body.Password], (error, results, fields) => {
             if (results.length === 0) {
                 next(new ApiError("Wrong studentcode or password", 401));
             } else {
                 console.log(results[0].ID);
                 res.status(200).json({
-                    "Key": auth.encodeToken(results[0].ID, body.Password),
+                    "Key": results[0].AccessKey,
                     "StudentID": results[0].ID
                 }).end();
             }
