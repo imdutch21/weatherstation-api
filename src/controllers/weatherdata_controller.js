@@ -21,30 +21,63 @@ module.exports = {
         let afterDateTime = request.query.AfterDateTime;
         let beforeDateTime = request.query.BeforeDateTime;
         let dataType = request.query.DataType;
+        let avg = request.query.AVG;
         let params = [];
-        let sql = "SELECT * FROM `Data`"
+        let statement = "SELECT * FROM `Data`"
+        if (avg) {
+            statement = "SELECT WeatherStationID, DataType, AVG(value) AS Average FROM `Data`"
+        }
+
+        let filter = "";
         if (dataType) {
-            sql += " WHERE DataType = ?";
+            filter += " WHERE DataType = ?";
             params.push(dataType);
         }
         if (beforeDateTime) {
             if (params.length > 0) {
-                sql += " AND TimeStamp < ?";
+                filter += " AND TimeStamp < ?";
             } else {
-                sql += " WHERE TimeStamp < ?";
+                filter += " WHERE TimeStamp < ?";
             }
             params.push(beforeDateTime);
         }
         if (afterDateTime) {
             if (params.length > 0) {
-                sql += " AND TimeStamp > ?";
+                filter += " AND TimeStamp > ?";
             } else {
-                sql += " WHERE TimeStamp > ?";
+                filter += " WHERE TimeStamp > ?";
             }
             params.push(afterDateTime);
         }
+        
+        if (avg) {
+            statement += filter;
+            if (params.length > 0) {
+                statement += " AND DataType <> 'WindDirection'";
+            } else {
+                statement += " WHERE DataType <> 'WindDirection'";
+            }
+            statement += " GROUP BY WeatherStationID, DataType"
+            if (!dataType) {
+                if(params.length > 0){
+                statement += " UNION SELECT WeatherStationID, DataType, " +
+                    "IF(DEGREES(ATAN2( -AVG(SIN(RADIANS(Value))) ,-AVG(COS(RADIANS(Value)))) ) < 180 ,DEGREES(ATAN2( -AVG(SIN(RADIANS(Value))) ,-AVG(COS(RADIANS(Value)))) ) + 180 ,DEGREES(ATAN2( -AVG(SIN(RADIANS(Value))) ,-AVG(COS(RADIANS(Value)))) ) - 180 ) AS Average" +
+                    " FROM `Data`" + filter + " AND DataType = 'WindDirection'" + " GROUP BY WeatherStationID, DataType";
+                } else{
+                    statement += " UNION SELECT WeatherStationID, DataType, " +
+                    "IF(DEGREES(ATAN2( -AVG(SIN(RADIANS(Value))) ,-AVG(COS(RADIANS(Value)))) ) < 180 ,DEGREES(ATAN2( -AVG(SIN(RADIANS(Value))) ,-AVG(COS(RADIANS(Value)))) ) + 180 ,DEGREES(ATAN2( -AVG(SIN(RADIANS(Value))) ,-AVG(COS(RADIANS(Value)))) ) - 180 ) AS Average" +
+                    " FROM `Data` WHERE DataType = 'WindDirection'" + " GROUP BY WeatherStationID, DataType";
+                }
+            } else if (dataType === "WindDirection") {
+                statement = "SELECT WeatherStationID, DataType, "
+                    + "IF(DEGREES(ATAN2( -AVG(SIN(RADIANS(Value))) ,-AVG(COS(RADIANS(Value)))) ) < 180 ,DEGREES(ATAN2( -AVG(SIN(RADIANS(Value))) ,-AVG(COS(RADIANS(Value)))) ) + 180 ,DEGREES(ATAN2( -AVG(SIN(RADIANS(Value))) ,-AVG(COS(RADIANS(Value)))) ) - 180 ) AS Average" +
+                    " FROM `Data`" + filter + " GROUP BY WeatherStationID, DataType";
+            }
+        } else{
+            statement += filter;
+        }
 
-        db.query(sql, params, (error, results, fields) => {
+        db.query(statement, params, (error, results, fields) => {
             if (error) {
                 next(new ApiError(error, 500))
             } else {
