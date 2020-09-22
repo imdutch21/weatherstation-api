@@ -9,7 +9,9 @@ class WeatherData {
         this.Timestamp = obj.Timestamp;
         this.WeatherStationID = obj.WeatherStationID;
         assert(dataTypes.includes(this.DataType), "The datatype needs to be one of the following: " + dataTypes);
-        assert(this.Timestamp != null && this.Timestamp !== undefined, "TimeStamp needs to be specified");
+        if(!this.Timestamp){
+            this.Timestamp = Math.round(new Date().getTime()/1000);
+        }
         assert(this.WeatherStationID !== null && this.WeatherStationID !== undefined, "WeatherStationId needs to be specified");
         let parsedValue = parseFloat(this.value);
         switch(this.dataType){
