@@ -21,6 +21,7 @@ module.exports = {
         let afterDateTime = request.query.AfterDateTime;
         let beforeDateTime = request.query.BeforeDateTime;
         let dataType = request.query.DataType;
+        let limit = request.query.Limit;
         let avg = request.query.AVG;
         let params = [];
         let statement = "SELECT * FROM `Data`"
@@ -49,7 +50,8 @@ module.exports = {
             }
             params.push(afterDateTime);
         }
-        
+
+
         if (avg) {
             statement += filter;
             if (params.length > 0) {
@@ -57,25 +59,37 @@ module.exports = {
             } else {
                 statement += " WHERE DataType <> 'WindDirection'";
             }
+
             statement += " GROUP BY WeatherStationID, DataType"
             if (!dataType) {
-                if(params.length > 0){
-                statement += " UNION SELECT WeatherStationID, DataType, " +
-                    "IF(DEGREES(ATAN2( -AVG(SIN(RADIANS(Value))) ,-AVG(COS(RADIANS(Value)))) ) < 180 ,DEGREES(ATAN2( -AVG(SIN(RADIANS(Value))) ,-AVG(COS(RADIANS(Value)))) ) + 180 ,DEGREES(ATAN2( -AVG(SIN(RADIANS(Value))) ,-AVG(COS(RADIANS(Value)))) ) - 180 ) AS Average" +
-                    " FROM `Data`" + filter + " AND DataType = 'WindDirection'" + " GROUP BY WeatherStationID, DataType";
-                } else{
+                if (params.length > 0) {
                     statement += " UNION SELECT WeatherStationID, DataType, " +
-                    "IF(DEGREES(ATAN2( -AVG(SIN(RADIANS(Value))) ,-AVG(COS(RADIANS(Value)))) ) < 180 ,DEGREES(ATAN2( -AVG(SIN(RADIANS(Value))) ,-AVG(COS(RADIANS(Value)))) ) + 180 ,DEGREES(ATAN2( -AVG(SIN(RADIANS(Value))) ,-AVG(COS(RADIANS(Value)))) ) - 180 ) AS Average" +
-                    " FROM `Data` WHERE DataType = 'WindDirection'" + " GROUP BY WeatherStationID, DataType";
+                        "IF(DEGREES(ATAN2( -AVG(SIN(RADIANS(Value))) ,-AVG(COS(RADIANS(Value)))) ) < 180 ,DEGREES(ATAN2( -AVG(SIN(RADIANS(Value))) ,-AVG(COS(RADIANS(Value)))) ) + 180 ,DEGREES(ATAN2( -AVG(SIN(RADIANS(Value))) ,-AVG(COS(RADIANS(Value)))) ) - 180 ) AS Average" +
+                        " FROM `Data`" + filter + " AND DataType = 'WindDirection'" + " GROUP BY WeatherStationID, DataType";
+                    params = params.concat(params);
+                } else {
+                    statement += " UNION SELECT WeatherStationID, DataType, " +
+                        "IF(DEGREES(ATAN2( -AVG(SIN(RADIANS(Value))) ,-AVG(COS(RADIANS(Value)))) ) < 180 ,DEGREES(ATAN2( -AVG(SIN(RADIANS(Value))) ,-AVG(COS(RADIANS(Value)))) ) + 180 ,DEGREES(ATAN2( -AVG(SIN(RADIANS(Value))) ,-AVG(COS(RADIANS(Value)))) ) - 180 ) AS Average" +
+                        " FROM `Data` WHERE DataType = 'WindDirection'" + " GROUP BY WeatherStationID, DataType";
                 }
+
             } else if (dataType === "WindDirection") {
-                statement = "SELECT WeatherStationID, DataType, "
-                    + "IF(DEGREES(ATAN2( -AVG(SIN(RADIANS(Value))) ,-AVG(COS(RADIANS(Value)))) ) < 180 ,DEGREES(ATAN2( -AVG(SIN(RADIANS(Value))) ,-AVG(COS(RADIANS(Value)))) ) + 180 ,DEGREES(ATAN2( -AVG(SIN(RADIANS(Value))) ,-AVG(COS(RADIANS(Value)))) ) - 180 ) AS Average" +
+                statement = "SELECT WeatherStationID, DataType, " +
+                    "IF(DEGREES(ATAN2( -AVG(SIN(RADIANS(Value))) ,-AVG(COS(RADIANS(Value)))) ) < 180 ,DEGREES(ATAN2( -AVG(SIN(RADIANS(Value))) ,-AVG(COS(RADIANS(Value)))) ) + 180 ,DEGREES(ATAN2( -AVG(SIN(RADIANS(Value))) ,-AVG(COS(RADIANS(Value)))) ) - 180 ) AS Average" +
                     " FROM `Data`" + filter + " GROUP BY WeatherStationID, DataType";
             }
-        } else{
+        } else {
+
+            if (limit) {
+                limit = parseInt(limit);
+                if (limit > 0) {
+                    filter += " ORDER BY ID DESC LIMIT ? ";
+                    params.push(limit);
+                }
+            }
             statement += filter;
         }
+        console.log(statement);
 
         db.query(statement, params, (error, results, fields) => {
             if (error) {
