@@ -19,12 +19,20 @@ function doesWeatherStationBelongToPerson(WeatherStationID, StudentID) {
 module.exports = {
     getEvents(request, response, next) {
         let WeatherStationID = request.params.weatherStationID;
+        let limit = request.query.Limit;
         doesWeatherStationBelongToPerson(WeatherStationID, request.id).then((resolve) => {
             if (resolve == false)
                 next(new ApiError("Not authorised to use this weatherstation", 412));
             else {
                 let sql = "SELECT * FROM `Event` WHERE WeatherStationID =?"
-                db.query(sql, [WeatherStationID], (error, results, fields) => {
+
+                if (limit) {
+                    limit = parseInt(limit);
+                    if (limit > 0) {
+                        sql += " ORDER BY ID DESC LIMIT ? ";
+                    }
+                }
+                db.query(sql, [WeatherStationID, limit], (error, results, fields) => {
                     if (error) {
                         next(new ApiError("Problem handling query", 500))
                     } else {
